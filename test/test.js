@@ -51,21 +51,23 @@ window.addEventListener("load", () => {
         dependencies: [labelStore],
         viewState: {
             checked: false,
-            label: "First"
+            label: "First",
+            ref: function () {
+
+            }
         },
         eventHandlers(self) {
-            return ({
+            return {
                 onCheckboxClick(e) {
-                    e.preventDefault();
-                    console.log(e.target);
-                    self.checked = !e.target.checked;
+                    console.log(self.ref.current.checked);
+                    self.checked = self.ref.current.checked;
                 }
-            })
+            };
         },
         render(eventHandlers, viewState, eventBus, labelStore) {
             return html`
                 <h1>${labelStore.state.name}</h1>
-                <input type="checkbox" checked="${viewState.checked}" onclick="${eventHandlers.onCheckboxClick}">
+                <input type="checkbox" ref="${viewState.ref}" onclick="${eventHandlers.onCheckboxClick}">
                 ${testComp.mountHere(eventBus, {text: "Hello"})}
             `;
         }

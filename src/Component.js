@@ -3,54 +3,78 @@ import {render} from "lighterhtml";
 export const componentDidUpdate = new CustomEvent("componentDidUpdate");
 
 export function Component(componentDescriptor) {
+
     let mountNode = null;
+    let propsReceived = false;
     let componentEventBus = new EventTarget();
+    componentEventBus.addEventListener("componentDidUpdate", () => update());
 
     let proxiedState = new Proxy(componentDescriptor.viewState, {
         set(t, p, v) {
             t[p] = v;
-            componentEventBus.dispatchEvent(componentDidUpdate);
+            update();
             return true;
         },
         get(t, p) {
             return t[p];
         }
     });
+
+
     componentDescriptor.dependencies.forEach(store => store.onPatch(() => update()));
+
+    const eventHandlers = componentDescriptor.eventHandlers(
+        proxiedState,
+        ...componentDescriptor.dependencies
+    );
 
     function renderHtml() {
         return componentDescriptor.render(
-            componentDescriptor.eventHandlers(
-                proxiedState,
-                ...componentDescriptor.dependencies
-            ),
+            eventHandlers,
             proxiedState,
             componentEventBus,
             ...componentDescriptor.dependencies
-        )
+        );
     }
 
     function update() {
-        if(mountNode) {
+        if (mountNode) {
             render(mountNode, () => renderHtml())
         }
+        componentEventBus.dispatchEvent(componentDidUpdate);
     }
 
     function mount(node) {
         mountNode = node;
         update();
     }
+
     function mountHere(eventBus, props = {}) {
         componentEventBus = eventBus;
-        Object.getOwnPropertyNames(props).forEach(p => proxiedState[p] = props[p]);
-        console.log(proxiedState);
+        if (!propsReceived) {
+            proxiedState = new Proxy(Object.assign(componentDescriptor.viewState, props), {
+                set(t, p, v) {
+                    console.log(v);
+                    t[p] = v;
+                    update();
+                    return true;
+                },
+                get(t, p) {
+                    return t[p];
+                }
+            });
+            update();
+            propsReceived = true;
+        }
+
+        componentEventBus.addEventListener("componentDidUpdate", update);
+
         return renderHtml();
     }
 
-    componentEventBus.addEventListener("componentDidUpdate", () => update());
     return {
         mount,
         mountHere,
-        forceUpdate: update()
+        forceUpdate: update
     }
 }
