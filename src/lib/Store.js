@@ -7,25 +7,27 @@ export function Store(storeDescription) {
         modules
     } = storeDescription;
 
-    const patchListener = [];
+    const eventBus = new EventTarget();
 
     const state = new Proxy(data, {
         set(target, p, value) {
             let op;
-            if(typeof target[p] === "undefined") {
+            if (typeof target[p] === "undefined") {
                 op = "add";
-            } else if(typeof target[p] !== "undefined" && typeof value !== "undefined") {
-                op= "replace"
+            } else if (typeof target[p] !== "undefined" && typeof value !== "undefined") {
+                op = "replace"
             } else {
                 throw Error("Weird operation");
             }
             const oldValue = target[p];
             target[p] = value;
-            patchListener.forEach(listener => listener({
-                op,
-                property: p,
-                oldValue,
-                newValue: value
+            eventBus.dispatchEvent(new CustomEvent("patch", {
+                detail: {
+                    op,
+                    property: p,
+                    oldValue,
+                    newValue: value
+                }
             }));
             return true;
         },
@@ -35,10 +37,12 @@ export function Store(storeDescription) {
         deleteProperty(target, p) {
             const oldValue = target[p];
             delete target[p];
-            patchListener.forEach(listener => listener({
-                op: "remove",
-                property: p,
-                oldValue
+            eventBus.dispatchEvent(new CustomEvent("patch", {
+                detail: {
+                    op: "remove",
+                    property: p,
+                    oldValue
+                }
             }));
             return true;
         },
@@ -63,14 +67,10 @@ export function Store(storeDescription) {
         return JSON.stringify(data);
     }
 
-    function onPatch(listener) {
-        patchListener.push(listener)
-    }
     return {
         dispatch,
         commit,
         serialize,
-        onPatch,
         state: new Proxy(data, {
             set(t, p, v) {
                 throw Error(`You cannot assign property "${p}" directly. You must use mutations.`);
@@ -82,31 +82,17 @@ export function Store(storeDescription) {
                 if (typeof modules !== "undefined") if (typeof modules[p] !== "undefined") {
                     return modules[p];
                 }
-                if(p === "serialize") {
+                if (p === "serialize") {
                     return () => JSON.stringify(t);
                 }
                 return t[p];
             }
-        })
-    }
-}
-
-export function Entity(entityDescription) {
-
-    function fromObject(object) {
-        Object
-            .keys(object)
-            .filter(key => {
-                if (!entityDescription.model.hasOwnProperty(key)) {
-                    throw Error(`Property "${key}" does not exist in "${entityDescription.name}" entity `);
-                }
-                return true;
-            });
-        const patchedStoreDesc = {...entityDescription, data: object};
-        return Store(patchedStoreDesc);
-    }
-
-    return {
-        fromObject
+        }),
+        addEventListener(...args) {
+            eventBus.addEventListener(...args)
+        },
+        removeEventListener(...args) {
+            eventBus.removeEventListener(...args)
+        }
     }
 }
