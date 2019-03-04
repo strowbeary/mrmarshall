@@ -117,3 +117,4 @@ fabric.properties
 
 .cache
 dist
+.DS_Store

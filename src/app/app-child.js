@@ -1,6 +1,7 @@
+import {Component} from "../lib";
 import {html} from "lighterhtml";
 
-export default {
+Component({
     name: "app-child",
     state() {
         return {
@@ -18,4 +19,4 @@ export default {
             <button onclick="${this.increment}">+1</button>
         `;
     }
-};
+});

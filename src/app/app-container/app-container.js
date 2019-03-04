@@ -1,7 +1,6 @@
-import 'babel-polyfill';
-import {Component} from "../lib/Component";
+import {Component, mapClass, Store} from "../../lib";
 import {html} from "lighterhtml";
-import {Store} from "../lib/Store";
+import "./app-container.scss";
 
 const sessionStore = Store({
     data: {
@@ -14,11 +13,9 @@ const sessionStore = Store({
     }
 });
 
+
 Component({
     name: "app-container",
-    beforeMount() {
-        import("./app-child.js").then(descriptor => Component(descriptor.default))
-    },
     stores: [
         sessionStore
     ],
@@ -31,13 +28,19 @@ Component({
     methods: {
         change(e) {
             sessionStore.commit("SET_USERNAME", e.target.value)
+        },
+        changeName(e) {
+            this.name = e.target.value
         }
     },
     render() {
         return html`
-            <h1>${this.userName}</h1>
+            <h1 class="${mapClass({
+                red: this.name === "second"
+            })}">${this.userName}</h1>
             <input type="text" onkeyup="${this.change}" value="${this.userName}"/>
-            <app-child></app-child>
+            <input type="text" onkeyup="${this.changeName}" value="${this.name}"/>
+            <slot></slot>
         `;
     }
 });

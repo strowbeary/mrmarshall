@@ -33,7 +33,6 @@ export function Component(descriptor) {
     customElements.define(descriptor.name, class extends HTMLElement {
         constructor() {
             super();
-
             this.store = new Proxy(
                 {
                     stores: descriptor.stores instanceof Array ? descriptor.stores : {},
@@ -45,13 +44,22 @@ export function Component(descriptor) {
                 },
                 stateChangesHandler
             );
+            const shadow = this.attachShadow({mode: "closed"});
 
+            const componentStylesheet = [].slice.call(document.styleSheets)
+                .find(stylesheet => {
+                    return stylesheet.href.includes(descriptor.name)
+                });
+            if (componentStylesheet) {
+                shadow.appendChild(componentStylesheet.ownerNode);
+            }
+
+            shadow.appendChild(document.createElement("div"));
             this.render = render.bind(
                 this.store,
-                this.attachShadow({mode: "closed"}),
+                shadow.lastChild,
                 descriptor.render
             );
-
             eventTarget.addEventListener("stateChange", () => this.render(), false);
             if (descriptor.beforeMount) {
                 descriptor.beforeMount.call(this.store);
