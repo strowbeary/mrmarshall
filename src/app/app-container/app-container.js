@@ -1,5 +1,5 @@
-import {Component, mapClass, Store} from "../../lib";
-import {html} from "lighterhtml";
+import { Component, mapClass, Store } from "../../lib";
+import { html } from "lighterhtml";
 import "./app-container.scss";
 
 const sessionStore = Store({
@@ -12,7 +12,6 @@ const sessionStore = Store({
         }
     }
 });
-
 
 Component({
     name: "app-container",
