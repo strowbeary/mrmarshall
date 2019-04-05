@@ -1,11 +1,12 @@
 export function Store(storeDescription) {
     const {
-        data,
         mutations,
         actions,
         getters,
         modules
     } = storeDescription;
+
+    const data = storeDescription.data();
 
     const eventBus = new EventTarget();
 
